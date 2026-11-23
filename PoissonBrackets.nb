@@ -1,0 +1,83 @@
+Notebook[{
+Cell["Poisson Brackets \:2014 Notebook", "Title"],
+Cell["Runs the functions defined in PoissonBrackets.wl. Keep this notebook in the same folder as PoissonBrackets.wl, then use Evaluation \:25b8 Evaluate Notebook.", "Text"],
+Cell["\:00a9 2026 Computational Classnotes \:00b7 CC BY-NC-SA 4.0", "Text"],
+Cell["0. Load the package and see every check", "Section"],
+Cell["SetDirectory[NotebookDirectory[]];
+Get[\"PoissonBrackets.wl\"]", "Input"],
+Cell["{Count[Values[checks], True], Length[checks]}", "Input"],
+Cell["1. The canonical bracket and Hamilton's equations", "Section"],
+Cell["pb[q1^2 p2, q2 p1]", "Input"],
+Cell["PBq[Sin[q] p^2, q p, {q}, {p}]", "Input"],
+Cell["Pendulum H = p\:00b2/2 \:2212 cos q: {q,H} and {p,H} are Hamilton's equations.", "Text"],
+Cell["With[{Hp = p^2/2 - Cos[q]}, {pb1[q, Hp], pb1[p, Hp]}]", "Input"],
+Cell["With[{Hp = pp^2/2 - Cos[qq]},
+ Show[StreamPlot[Evaluate[{D[Hp, pp], -D[Hp, qq]}], {qq, -2 Pi, 2 Pi}, {pp, -3, 3}],
+  ContourPlot[Hp, {qq, -2 Pi, 2 Pi}, {pp, -3, 3}, ContourShading -> None, Contours -> 12],
+  FrameLabel -> {\"q\", \"p\"}, PlotLabel -> \"Pendulum: flow of X_H along level sets of H\"]]", "Input"],
+Cell["2. Intuition: area, rate, and the quantum shadow", "Section"],
+Cell["pb1[f[q, p], g[q, p]] == Det[D[{f[q, p], g[q, p]}, {{q, p}}]] // Simplify", "Input"],
+Cell["(D[f @@ flow, t] /. t -> 0) == pb1[f[q, p], Hosc] // Simplify", "Input"],
+Cell["Moyal star product: commutator over i\:0127, and its limit \:0127 \:2192 0.", "Text"],
+Cell["star[q, p] - star[p, q]", "Input"],
+Cell["mc[fP, gP] // Collect[#, \[HBar]] &", "Input"],
+Cell["{mc[fP, gP] /. \[HBar] -> 0, pb1[fP, gP]} // Expand", "Input"],
+Cell["3. The algebra", "Section"],
+Cell["{pb[F, pb[G, K]] + pb[G, pb[K, F]] + pb[K, pb[F, G]], pb[F, G K] - pb[F, G] K - G pb[F, K]} // Simplify", "Input"],
+Cell["{Outer[pb, qs, ps], Outer[pb, qs, qs]} // Map[MatrixForm]", "Input"],
+Cell["Jacobiator: zero for a Poisson tensor, nonzero for the counter-example \:03a0bad.", "Text"],
+Cell["Union@Flatten@Simplify@jacobiator[\[CapitalPi]LP, m]", "Input"],
+Cell["DeleteCases[Flatten@Simplify@jacobiator[\[CapitalPi]bad, v3], 0] // Union", "Input"],
+Cell["4. Lie\:2013Poisson on so(3)* and the rigid body", "Section"],
+Cell["Outer[lp, m, m] // MatrixForm", "Input"],
+Cell["lp[m . m, f @@ m]", "Input"],
+Cell["mdot // Simplify", "Input"],
+Cell["Body trajectories (I = 1, 2, 3) stay on the sphere |m| = 1 (Casimir) and on level sets of H.", "Text"],
+Cell["Module[{rhs, eqs, sols},
+ rhs = mdot /. Iner[i_] :> {1, 2, 3}[[i]];
+ eqs = Thread[D[{M1[t], M2[t], M3[t]}, t] == (rhs /. Thread[m -> {M1[t], M2[t], M3[t]}])];
+ sols = Table[NDSolveValue[Join[eqs, Thread[{M1[0], M2[0], M3[0]} == Normalize[ic]]], {M1[t], M2[t], M3[t]}, {t, 0, 30}],
+   {ic, {{1, 0.1, 0.1}, {-1, 0.05, -0.2}, {0.1, 1, 0.1}, {0.2, 0.2, 1}, {0.2, -0.2, -1}, {0.6, 0.3, 0.7}}}];
+ Show[Graphics3D[{Opacity[0.15], Sphere[]}],
+  ParametricPlot3D[Evaluate[sols], {t, 0, 30}, PlotStyle -> Thick],
+  Boxed -> False, Axes -> False, PlotLabel -> \"Free rigid body on the coadjoint orbit |m| = 1\"]]", "Input"],
+Cell["5. Kepler, Runge\:2013Lenz and so(4)", "Section"],
+Cell["{pb3[#, Hk] & /@ L, pb3[#, Hk] & /@ A} // Simplify", "Input"],
+Cell["Outer[pb3, A, A] + 2 Hk epsT[L] // Simplify", "Input"],
+Cell["Module[{Hpl = Hk /. {x3 -> 0, y3 -> 0}, s0, sol, Avec},
+ s0 = {x1 -> 1, x2 -> 0, x3 -> 0, y1 -> 0, y2 -> 1.2, y3 -> 0};
+ sol = NDSolveValue[{X1'[t] == Y1[t], X2'[t] == Y2[t],
+    Y1'[t] == (-D[Hpl, x1] /. {x1 -> X1[t], x2 -> X2[t]}), Y2'[t] == (-D[Hpl, x2] /. {x1 -> X1[t], x2 -> X2[t]}),
+    X1[0] == 1, X2[0] == 0, Y1[0] == 0, Y2[0] == 1.2}, {X1[t], X2[t]}, {t, 0, 20}];
+ Avec = (A /. s0)[[;; 2]];
+ Show[ParametricPlot[sol, {t, 0, 20}, PlotStyle -> Thick],
+  Graphics[{PointSize[Large], Point[{0, 0}], Red, Arrow[{{0, 0}, Avec/Norm[Avec]}]}],
+  AspectRatio -> Automatic, PlotRange -> All, PlotLabel -> \"Kepler orbit; red: Runge\:2013Lenz direction (perihelion)\"]]", "Input"],
+Cell["pb3[f @@ q3, L[[3]]] // Simplify", "Input"],
+Cell["6. Symplectic integration: leapfrog vs explicit Euler", "Section"],
+Cell["{Transpose[Msym] . Jcan[1] . Msym - Jcan[1] // Simplify, Det[Meul] // Simplify}", "Input"],
+Cell["Module[{lf = NestList[leap[#, 0.3] &, {1.5, 0.}, 300], eu = NestList[eulerStep[#, 0.3] &, {1.5, 0.}, 40], En},
+ En[{a_, b_}] := b^2/2 - Cos[a];
+ GraphicsRow[{
+   ListPlot[{lf, eu}, PlotLegends -> {\"leapfrog\", \"explicit Euler\"}, AspectRatio -> 1, AxesLabel -> {\"q\", \"p\"}, PlotRange -> {{-4, 4}, {-4, 4}}],
+   ListLinePlot[{En /@ lf, En /@ eu}, PlotLegends -> {\"leapfrog\", \"explicit Euler\"}, AxesLabel -> {\"step\", \"H\"}, PlotRange -> {-1, 2}]}, ImageSize -> 800]]", "Input"],
+Cell["7. KdV as a Hamiltonian PDE", "Section"],
+Cell["{\[Delta]H, kdvRHS}", "Input"],
+Cell["{eulerOp[kdvRHS], eulerOp[u[s] kdvRHS], eulerOp[\[Delta]H kdvRHS], eulerOp[u[s]^2 D[u[s], {s, 2}]]} // Simplify", "Input"],
+Cell["8. Geometry and manifolds", "Section"],
+Cell["{Simplify[lp[\[Phi]m, m3] /. sph, asm], \[Theta]\[Phi]bracket, \[Omega]\[Theta]\[Phi]}", "Input"],
+Cell["{pb1[\[Theta]ang, Iact] // Simplify, pb[H1, H2]}", "Input"],
+Cell["Simplify[Total[MapThread[D, {XH, z4}]]]", "Input"],
+Cell["christoffel[{{1, 0}, {0, Sin[\[Theta]]^2}}, {\[Theta], \[Phi]}]", "Input"],
+Cell["Geodesic flow on S\:00b2 generated by H = \:00bd g^{ij} p_i p_j: the trajectory is a great circle.", "Text"],
+Cell["Module[{Hgeo, vars, rhs, sol},
+ Hgeo = (p\[Theta]^2 + p\[Phi]^2/Sin[\[Theta]]^2)/2; vars = {\[Theta], \[Phi], p\[Theta], p\[Phi]};
+ rhs = PBq[#, Hgeo, {\[Theta], \[Phi]}, {p\[Theta], p\[Phi]}] & /@ vars;
+ sol = NDSolveValue[Join[Thread[D[{T1[t], T2[t], P1[t], P2[t]}, t] == (rhs /. Thread[vars -> {T1[t], T2[t], P1[t], P2[t]}])],
+    Thread[{T1[0], T2[0], P1[0], P2[0]} == {Pi/2, 0, 0.6, 0.8}]], {T1[t], T2[t]}, {t, 0, 2 Pi}];
+ Show[Graphics3D[{Opacity[0.2], Sphere[]}],
+  ParametricPlot3D[Evaluate[{Sin[sol[[1]]] Cos[sol[[2]]], Sin[sol[[1]]] Sin[sol[[2]]], Cos[sol[[1]]]}], {t, 0, 2 Pi}, PlotStyle -> {Red, Thick}],
+  Boxed -> False, Axes -> False]]", "Input"],
+Cell["{geodesicCheck[{{1, 0}, {0, Sin[\[Theta]]^2}}, {\[Theta], \[Phi]}, {p\[Theta], p\[Phi]}], geodesicCheck[{{1/y^2, 0}, {0, 1/y^2}}, {x, y}, {px, py}]}", "Input"],
+Cell["\[CapitalGamma]2d[f[x, y], g[x, y]] + I PBq[f[x, y], g[x, y], {x}, {y}] == 4 dz[f[x, y]] dzb[g[x, y]] // Simplify", "Input"]
+}, WindowTitle -> "Poisson Brackets"]
